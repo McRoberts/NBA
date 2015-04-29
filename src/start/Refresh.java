@@ -8,6 +8,8 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 
+import presentation.hotsport.HotSportPanel;
+
 import common.statics.PathOfFile;
 
 import databaseutility.OneMatch_add;
@@ -23,6 +25,7 @@ public class Refresh extends Thread {
 				for (WatchEvent<?> event : watchKey.pollEvents()) {
 					if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
 						matchName = event.context().toString();
+						System.out.println(matchName);
 						OneMatch_add oneMatch = new OneMatch_add(matchName);
 						oneMatch.writeDetailInfoOfPlayerAndTeamToMEN();
 						oneMatch.writeGeneralMatchInfo();
@@ -32,10 +35,15 @@ public class Refresh extends Thread {
 						oneMatch.writeTeamHighInfoToCACHE();// 第三步更新球队高级数据
 						oneMatch.writePlayerNormalInfoToCACHE();// 第四步更新球员普通数据
 						oneMatch.writePlayerHighInfoToCACHE();// 第五步更新球员高级数据//这一步一定是最后做，因为只有有了以上数据才能进行这一步
+						HotSportPanel.showNew();
 					}
 				}
 				if (!watchKey.reset()) {
 					break;
+				}
+				try {
+					Thread.sleep(5);
+				} catch (InterruptedException e) {
 				}
 			}
 		} catch (IOException e) {

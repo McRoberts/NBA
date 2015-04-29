@@ -37,7 +37,6 @@ class OneMatch {
 			this.quarterPoint = matchReader.readLine();
 			this.getMainInfoOfMatch(mainInfo);// 得到比赛的主要信息，包括得分,时间
 			this.firstTeam = matchReader.readLine().trim();// 初始化第一个队名
-
 			for (int j = 0; j < NUMBER.NUMBER_OF_FIRST; j++) {
 				temp = matchReader.readLine();
 				listOfFirstTeamPlayerPerformance.add(this.getFirstTeamFirstPlayerPo(temp));
@@ -62,7 +61,6 @@ class OneMatch {
 					this.listOfSecondTeamPlayerPerformance);
 			this.isDataCorrect = this.isDataCorrect();
 		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 

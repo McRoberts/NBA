@@ -16,6 +16,8 @@ import presentation.players.OnePlayerPanel;
 import presentation.teams.OneTeamPanel;
 import businesslogic.matches.OneMatchInfoBl;
 import businesslogicservice.matches.OneMatchInfoBlService;
+import businesslogicservice.teams.OneTeamInfoBlService;
+
 import common.mycomponent.MyButton;
 import common.mycomponent.MyLabel;
 import common.mycomponent.MyPanel;
@@ -24,21 +26,16 @@ import common.mycomponent.MyTable;
 import common.mycomponent.MyTableModel;
 import common.mydatastructure.GeneralInfoOfOneMatch;
 import common.mydatastructure.PlayerPerformOfOneMatch;
+import common.mydatastructure.TeamPerformOfOneMatch;
 import common.statics.MyColor;
 import common.statics.MyFont;
 import common.statics.NUMBER;
 import common.statics.PathOfFile;
 
 public class OneMatchPanel extends MyPanel implements MouseListener {
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	private MyPanel thisPanel = this;
 	private MyLabel point;
-	private MyButton firstTeamMemberInfoButton;
-	private MyButton secondTeamMemberInfoButton;
-	private MyButton teamMatchInfoButton;
 	private MyLabel firstTeamLogo;
 	private MyLabel secondTeamLogo;
 	private ContentPanel contentPanel;
@@ -54,10 +51,16 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 	private ArrayList<PlayerPerformOfOneMatch> firstTeamPlayerPerform;
 	private ArrayList<PlayerPerformOfOneMatch> secondTeamPlayerPerform;
 
+	private MyButton[] button = new MyButton[] { new MyButton("主队球员数据"), new MyButton("客队球员数据"), new MyButton("球队对比") };
+	private MyPanel[] panel;
+	private int flag = 0;
+
 	public OneMatchPanel(GeneralInfoOfOneMatch generalOneMatch) {
 		this.generalOneMatch = generalOneMatch;
 		this.firstTeamPlayerPerform = oneMatchInfoBl.getPlayersPerformOfOneMatch(generalOneMatch.getFirstTeamName(), generalOneMatch.getDate());
 		this.secondTeamPlayerPerform = oneMatchInfoBl.getPlayersPerformOfOneMatch(generalOneMatch.getSecondTeamName(), generalOneMatch.getDate());
+		panel = new MyPanel[] { new TeamMemberInfoPanel(firstTeamPlayerPerform), new TeamMemberInfoPanel(secondTeamPlayerPerform),
+				new TeamInfoComparePanel() };
 		this.createObjects();
 		this.setComponentsLocation();
 		this.setComponentsStyle();
@@ -67,17 +70,11 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 	}
 
 	private void addListener() {
-		firstTeamMemberInfoButton.addMouseListener(this);
-		secondTeamMemberInfoButton.addMouseListener(this);
-		teamMatchInfoButton.addMouseListener(this);
 		firstTeamLogo.addMouseListener(this);
 		secondTeamLogo.addMouseListener(this);
 	}
 
 	private void createObjects() {
-		firstTeamMemberInfoButton = new MyButton("主场球员数据");
-		secondTeamMemberInfoButton = new MyButton("客场球员数据");
-		teamMatchInfoButton = new MyButton("球队对比");
 		point = new MyLabel();
 		firstTeamLogo = new MyLabel();
 		secondTeamLogo = new MyLabel();
@@ -94,10 +91,15 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 	}
 
 	private void setComponentsLocation() {
-		firstTeamMemberInfoButton.setBounds((int) (NUMBER.px * 80), (int) (NUMBER.px * 250), Label_width, Label_height);
-		secondTeamMemberInfoButton.setBounds((int) (NUMBER.px * 493), (int) (NUMBER.px * 250), Label_width, Label_height);
-		teamMatchInfoButton.setBounds((int) (NUMBER.px * 906), (int) (NUMBER.px * 250), Label_width, Label_height);
-
+		for (int i = 0; i < 3; i++) {
+			button[i].setBounds((int) (NUMBER.px * 80) + Label_width * i, (int) (NUMBER.px * 250), Label_width, Label_height);
+			button[i].setBackground(MyColor.MIDDLE_COLOR);
+			button[i].setForeground(MyColor.MY_WHITE);
+			button[i].setFont(MyFont.SMALL_BOLD);
+			button[i].setContentAreaFilled(true);
+			button[i].addMouseListener(this);
+			this.add(button[i]);
+		}
 		firstTeamLogo.setBounds((int) (NUMBER.px * 450), (int) (NUMBER.px * 10), (int) (NUMBER.px * 100), (int) (NUMBER.px * 80));
 		secondTeamLogo.setBounds((int) (NUMBER.px * 850), (int) (NUMBER.px * 10), (int) (NUMBER.px * 100), (int) (NUMBER.px * 80));
 		point.setBounds((int) (NUMBER.px * 550), (int) (NUMBER.px * 10), (int) (NUMBER.px * 300), (int) (NUMBER.px * 100));
@@ -108,27 +110,13 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 		this.add(point);
 		this.add(matchInfo);
 		this.add(contentPanel);
-		this.add(firstTeamMemberInfoButton);
-		this.add(secondTeamMemberInfoButton);
-		this.add(teamMatchInfoButton);
 	}
 
 	private void setComponentsStyle() {
 		point.setHorizontalAlignment(SwingConstants.CENTER);
 		point.setFont(MyFont.LARGEST_BOLD);
 		point.setForeground(MyColor.MIDDLE_COLOR);
-		firstTeamMemberInfoButton.setContentAreaFilled(true);
-		firstTeamMemberInfoButton.setBackground(MyColor.DEEP_COLOR);
-		firstTeamMemberInfoButton.setForeground(MyColor.MY_WHITE);
-		firstTeamMemberInfoButton.setFont(MyFont.SMALL_BOLD);
-		secondTeamMemberInfoButton.setBackground(MyColor.MIDDLE_COLOR);
-		secondTeamMemberInfoButton.setForeground(MyColor.MY_WHITE);
-		secondTeamMemberInfoButton.setFont(MyFont.SMALL_BOLD);
-		secondTeamMemberInfoButton.setContentAreaFilled(true);
-		teamMatchInfoButton.setBackground(MyColor.MIDDLE_COLOR);
-		teamMatchInfoButton.setForeground(MyColor.MY_WHITE);
-		teamMatchInfoButton.setFont(MyFont.SMALL_BOLD);
-		teamMatchInfoButton.setContentAreaFilled(true);
+		button[flag].setBackground(MyColor.MY_ORIANGE);
 	}
 
 	private void initTable() {
@@ -215,36 +203,53 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 	}
 
 	class TeamInfoComparePanel extends MyPanel {
-		private String performanceList[]={"分数","投篮得分","三分球","罚球","助攻","篮板","抢断","盖帽"};
-		private MyLabel performLabel[]=new MyLabel[8];
-		private MyLabel firstTeamInfo[]=new MyLabel[8];
-		private MyLabel secondTeamInfo[]=new MyLabel[8];
+		private OneTeamInfoBlService OneTeamInfoBl = new businesslogic.teams.OneTeamInfoBl();
+		private TeamPerformOfOneMatch firstTeamPerform = OneTeamInfoBl.getOneMatchTeamPerform(generalOneMatch.getFirstTeamName(),
+				generalOneMatch.getDate());
+		private TeamPerformOfOneMatch secondTeamPerform = OneTeamInfoBl.getOneMatchTeamPerform(generalOneMatch.getSecondTeamName(),
+				generalOneMatch.getDate());
+		private String performanceList[] = { "分数", "投篮", "三分球", "罚球", "助攻", "篮板", "抢断", "盖帽" };
+		private String firstPerform[] = { String.valueOf(firstTeamPerform.getPoint()),
+				String.valueOf(firstTeamPerform.getTotalHit()) + "/" + String.valueOf(firstTeamPerform.getTotalShot()),
+				String.valueOf(firstTeamPerform.getThreeHit()) + "/" + String.valueOf(firstTeamPerform.getThreeShot()),
+				String.valueOf(firstTeamPerform.getFreeHit()) + "/" + String.valueOf(firstTeamPerform.getFreeShot()),
+				String.valueOf(firstTeamPerform.getAssist()), String.valueOf(firstTeamPerform.getRebound()),
+				String.valueOf(firstTeamPerform.getSteal()), String.valueOf(firstTeamPerform.getBlock()) };
+
+		private String secondPerform[] = { String.valueOf(secondTeamPerform.getPoint()),
+				String.valueOf(secondTeamPerform.getTotalHit()) + "/" + String.valueOf(secondTeamPerform.getTotalShot()),
+				String.valueOf(secondTeamPerform.getThreeHit()) + "/" + String.valueOf(secondTeamPerform.getThreeShot()),
+				String.valueOf(secondTeamPerform.getFreeHit()) + "/" + String.valueOf(secondTeamPerform.getFreeShot()),
+				String.valueOf(secondTeamPerform.getAssist()), String.valueOf(secondTeamPerform.getRebound()),
+				String.valueOf(secondTeamPerform.getSteal()), String.valueOf(secondTeamPerform.getBlock()) };
+
+		private MyLabel performLabel[] = new MyLabel[8];
+		private MyLabel firstTeamInfo[] = new MyLabel[8];
+		private MyLabel secondTeamInfo[] = new MyLabel[8];
 		private static final long serialVersionUID = 1L;
-		public TeamInfoComparePanel(){
-			for(int i=0;i<8;i++){
-				performLabel[i]=new MyLabel(performanceList[i]);
+
+		public TeamInfoComparePanel() {
+			for (int i = 0; i < 8; i++) {
+				performLabel[i] = new MyLabel(performanceList[i]);
 				performLabel[i].setHorizontalAlignment(SwingConstants.CENTER);
 				performLabel[i].setOpaque(true);
 				performLabel[i].setBackground(MyColor.LIGHT_BLUE);
-				performLabel[i].setBounds((int) (NUMBER.px * 940)/2,i* (int) (NUMBER.px *45), (int) (NUMBER.px * 300), (int) (NUMBER.px *45));
-				
-				firstTeamInfo[i]=new MyLabel();
-//				firstTeamInfo[i].setOpaque(true);
-//				firstTeamInfo[i].setBackground(MyColor.LIGHT_BLUE);
-				firstTeamInfo[i].setBounds((int) (NUMBER.px * 940)/2-(int) (NUMBER.px * 300),i* (int) (NUMBER.px *45), (int) (NUMBER.px * 300), (int) (NUMBER.px *45));
-				
-				
-				secondTeamInfo[i]=new MyLabel();
+				performLabel[i].setBounds((int) (NUMBER.px * 940) / 2, i * (int) (NUMBER.px * 45), (int) (NUMBER.px * 300), (int) (NUMBER.px * 45));
+
+				firstTeamInfo[i] = new MyLabel(firstPerform[i] + "--------------------");
+				firstTeamInfo[i].setBounds((int) (NUMBER.px * 940) / 2 - (int) (NUMBER.px * 300), i * (int) (NUMBER.px * 45),
+						(int) (NUMBER.px * 300), (int) (NUMBER.px * 45));
+
+				secondTeamInfo[i] = new MyLabel("--------------------" + secondPerform[i]);
 				secondTeamInfo[i].setHorizontalAlignment(SwingConstants.RIGHT);
-//				secondTeamInfo[i].setOpaque(true);
-//				secondTeamInfo[i].setBackground(MyColor.LIGHT_BLUE);
-				secondTeamInfo[i].setBounds((int) (NUMBER.px * 940)/2+(int) (NUMBER.px * 300),i* (int) (NUMBER.px *45), (int) (NUMBER.px * 300), (int) (NUMBER.px *45));
-				
+				secondTeamInfo[i].setBounds((int) (NUMBER.px * 940) / 2 + (int) (NUMBER.px * 300), i * (int) (NUMBER.px * 45),
+						(int) (NUMBER.px * 300), (int) (NUMBER.px * 45));
+
 				this.add(performLabel[i]);
 				this.add(firstTeamInfo[i]);
 				this.add(secondTeamInfo[i]);
 			}
-			
+
 		}
 
 	}
@@ -252,45 +257,30 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 	class ContentPanel extends JPanel {
 		private static final long serialVersionUID = 1L;
 		private CardLayout card;
-		private TeamMemberInfoPanel firstTeamMemberInfoPanel;
-		private TeamMemberInfoPanel secondTeamMemberInfoPanel;
-		private TeamInfoComparePanel teamInfoComparePanel;
 
 		ContentPanel() {
 			card = new CardLayout();
-			this.setOpaque(false);
 			this.setLayout(card);
-			//
-			firstTeamMemberInfoPanel = new TeamMemberInfoPanel(firstTeamPlayerPerform);
-			secondTeamMemberInfoPanel = new TeamMemberInfoPanel(secondTeamPlayerPerform);
-			teamInfoComparePanel = new TeamInfoComparePanel();
-			//
-			this.add(firstTeamMemberInfoPanel, "firstTeamMemberInfoPanel");
-			this.add(secondTeamMemberInfoPanel, "secondTeamMemberInfoPanel");
-			this.add(teamInfoComparePanel, "teamInfoComparePanel");
+			for (int i = 0; i < 3; i++) {
+				this.add(panel[i], String.valueOf(i));
+			}
+		}
+
+		public void showMyPanel(int i) {
+			this.card.show(contentPanel, String.valueOf(i));
 		}
 	}
 
 	public void mouseClicked(MouseEvent e) {
-		if (e.getSource().equals(firstTeamMemberInfoButton)) {
-			contentPanel.card.show(contentPanel, "firstTeamMemberInfoPanel");
-			firstTeamMemberInfoButton.setBackground(MyColor.DEEP_COLOR);
-			secondTeamMemberInfoButton.setBackground(MyColor.MIDDLE_COLOR);
-			teamMatchInfoButton.setBackground(MyColor.MIDDLE_COLOR);
+		for (int i = 0; i < 3; i++) {
+			if (e.getSource().equals(button[i])) {
+				contentPanel.showMyPanel(i);
+				button[flag].setBackground(MyColor.MIDDLE_COLOR);
+				button[i].setBackground(MyColor.MY_ORIANGE);
+				flag = i;
+			}
 		}
-		else if (e.getSource().equals(secondTeamMemberInfoButton)) {
-			contentPanel.card.show(contentPanel, "secondTeamMemberInfoPanel");
-			firstTeamMemberInfoButton.setBackground(MyColor.MIDDLE_COLOR);
-			secondTeamMemberInfoButton.setBackground(MyColor.DEEP_COLOR);
-			teamMatchInfoButton.setBackground(MyColor.MIDDLE_COLOR);
-		}
-		else if (e.getSource().equals(teamMatchInfoButton)) {
-			contentPanel.card.show(contentPanel, "teamInfoComparePanel");
-			firstTeamMemberInfoButton.setBackground(MyColor.MIDDLE_COLOR);
-			secondTeamMemberInfoButton.setBackground(MyColor.MIDDLE_COLOR);
-			teamMatchInfoButton.setBackground(MyColor.DEEP_COLOR);
-		}
-		else if (e.getSource().equals(firstTeamLogo)) {
+		if (e.getSource().equals(firstTeamLogo)) {
 			OneTeamPanel teamPanel = new OneTeamPanel(generalOneMatch.getFirstTeamName());
 			SonFrame.changePanel(thisPanel, teamPanel);
 		}
@@ -301,26 +291,35 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 	}
 
 	public void mouseEntered(MouseEvent e) {
-		if (e.getSource().equals(firstTeamMemberInfoButton)) {
-			firstTeamMemberInfoButton.setBorderPainted(true);
+		for (int i = 0; i < 3; i++) {
+			if (e.getSource().equals(button[i])) {
+				button[i].setBackground(MyColor.DEEP_COLOR);
+			}
 		}
-		else if (e.getSource().equals(secondTeamMemberInfoButton)) {
-			secondTeamMemberInfoButton.setBorderPainted(true);
+		if (e.getSource().equals(firstTeamLogo)) {
+			firstTeamLogo.setLocation(firstTeamLogo.getX() - NUMBER.STEP, firstTeamLogo.getY() - NUMBER.STEP);
 		}
-		else if (e.getSource().equals(teamMatchInfoButton)) {
-			teamMatchInfoButton.setBorderPainted(true);
+		else if (e.getSource().equals(secondTeamLogo)) {
+			secondTeamLogo.setLocation(secondTeamLogo.getX() - NUMBER.STEP, secondTeamLogo.getY() - NUMBER.STEP);
 		}
 	}
 
 	public void mouseExited(MouseEvent e) {
-		if (e.getSource().equals(firstTeamMemberInfoButton)) {
-			firstTeamMemberInfoButton.setBorderPainted(false);
+		for (int i = 0; i < 3; i++) {
+			if (e.getSource().equals(button[i])) {
+				if (flag == i) {
+					button[i].setBackground(MyColor.MY_ORIANGE);
+				}
+				else {
+					button[i].setBackground(MyColor.MIDDLE_COLOR);
+				}
+			}
 		}
-		else if (e.getSource().equals(secondTeamMemberInfoButton)) {
-			secondTeamMemberInfoButton.setBorderPainted(false);
+		if (e.getSource().equals(firstTeamLogo)) {
+			firstTeamLogo.setLocation(firstTeamLogo.getX() + (int) (NUMBER.px * 3), firstTeamLogo.getY() + (int) (NUMBER.px * 3));
 		}
-		else if (e.getSource().equals(teamMatchInfoButton)) {
-			teamMatchInfoButton.setBorderPainted(false);
+		else if (e.getSource().equals(secondTeamLogo)) {
+			secondTeamLogo.setLocation(secondTeamLogo.getX() + (int) (NUMBER.px * 3), secondTeamLogo.getY() + (int) (NUMBER.px * 3));
 		}
 	}
 
